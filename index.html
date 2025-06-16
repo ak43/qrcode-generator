@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR Code Generator</title>
+<style>
+    * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    width: 100%;
+    border-bottom: 5px solid #013263;
+}
+
+.header-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.header-content img {
+    max-width: 200px;
+    height: auto;
+}
+
+h1 {
+    color: #333;
+}
+
+h3 {
+    padding: 10px 0 0;
+    margin: 0;
+}
+
+.container {
+    flex: 1;
+    margin: 20px auto;
+    padding: 20px 40px;
+    width: 50%;
+    min-height: 60vh;
+    border: 1px solid gray;
+    background: #fff;
+}
+
+.form-controls {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.label {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+input[type="text"] {
+    padding: 10px;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 10px 5px;
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 48%;
+}
+
+button:hover {
+    background-color: #0055aa;
+}
+
+#canvas-container {
+    margin: 20px auto;
+    width: 100%;
+    text-align: center;
+}
+
+canvas {
+    border: 1px solid #ccc;
+}
+
+#downloadBtn {
+    display: none;
+    width: 100%;
+    margin: 20px 0;
+}
+
+footer {
+    margin-top: auto;
+    width: 100%;
+    text-align: center;
+    padding: 20px 0;
+    font-size: 14px;
+    color: #e4e0e0;
+    background-color: #013263;
+}
+
+@media only screen and (max-width: 880px) {
+            .container {
+                width: 80%;
+            }
+
+            .form-controls {
+                width: 100%;
+                margin-left: 10px;
+            }
+
+            input[type="text"] {
+                width: 90%;
+            }
+
+            button {
+                width: 90%
+            }
+        }
+</style>
+
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <div class="header-content">
+                <img src="./img/moh-full-logo.png" alt="Ministry of Health Logo">
+                <h1>Digital Health Lead Executive Office</h1>
+                <h3>QR Code Generator</h3>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="form-controls">
+                <div class="label">Enter URL of the resource:</div>
+                <div class="control">
+                    <input type="text" id="urlInput" placeholder="Enter URL" />
+                </div>
+                <div>
+                    <button onclick="generateQRCode()">Generate</button>
+                    <button onclick="clearQRCode()">Clear</button>
+                </div>
+            </div>
+            <div id="canvas-container"></div>
+            <button id="downloadBtn" onclick="downloadQRCode()">Download QR Code</button>
+        </div>
+
+        <footer>
+            &copy; 2025 DHLEO
+            <div>QR Code Generator, v1.0</div>
+        </footer>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <script>
+        const maxSize = 200;
+        const logoSizeRatio = 0.45;
+        const logoURL = "./img/moh-logo.jpeg";
+
+        function generateQRCode() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                alert("Please enter a URL.");
+                return;
+            }
+
+            const tempDiv = document.createElement("div");
+            tempDiv.style.position = "absolute";
+            tempDiv.style.left = "-9999px";
+            document.body.appendChild(tempDiv);
+
+            const qr = new QRCode(tempDiv, {
+                text: url,
+                width: maxSize,
+                height: maxSize,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H,
+            });
+
+            setTimeout(() => {
+                const qrCanvas = tempDiv.querySelector("canvas");
+                if (!qrCanvas) {
+                    alert("QR code generation failed.");
+                    return;
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = maxSize;
+                canvas.height = maxSize;
+                const ctx = canvas.getContext("2d");
+
+                ctx.drawImage(qrCanvas, 0, 0, maxSize, maxSize);
+
+                // Load the logo
+                const logo = new Image();
+                logo.crossOrigin = "anonymous";
+                logo.src = logoURL;
+
+                logo.onload = () => {
+                    const logoSize = maxSize * logoSizeRatio;
+                    const x = (maxSize - logoSize) / 2;
+                    const y = (maxSize - logoSize) / 2;
+
+                    ctx.drawImage(logo, x, y, logoSize, logoSize);
+
+                    const container = document.getElementById("canvas-container");
+                    container.innerHTML = "";
+                    container.appendChild(canvas);
+
+                    document.getElementById("downloadBtn").style.display = "inline-block";
+
+                    document.body.removeChild(tempDiv);
+                };
+
+                logo.onerror = () => {
+                    alert("Failed to load logo.");
+                    document.body.removeChild(tempDiv);
+                };
+            }, 200);
+        }
+
+        function downloadQRCode() {
+            const canvas = document.querySelector("#canvas-container canvas");
+            if (!canvas) {
+                alert("No QR code to download.");
+                return;
+            }
+
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = "qrcode.png";
+            link.click();
+        }
+
+        function clearQRCode() {
+            document.getElementById('urlInput').value = '';
+            document.getElementById("canvas-container").innerHTML = "";
+            document.getElementById("downloadBtn").style.display = "none";
+        }
+    </script>
+</body>
+</html>
